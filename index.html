@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>CIVILIAN CLOAK // SMELTER PROCESSOR</title>
+    <style>
+        :root { --neon: #00ff41; --bg: #050505; --alert: #ff3e3e; }
+        body { background: var(--bg); color: var(--neon); font-family: 'Courier New', monospace; margin: 0; padding: 20px; height: 100vh; overflow: hidden; box-sizing: border-box; }
+        .smelter-dashboard { display: grid; grid-template-columns: 2fr 1fr; grid-template-rows: auto 1fr auto; gap: 15px; height: 100%; }
+        .header { grid-column: 1 / span 2; border-bottom: 1px solid var(--neon); padding-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+        h1 { margin: 0; letter-spacing: 5px; font-size: 1.4rem; text-shadow: 0 0 10px var(--neon); }
+        
+        /* Main Camera Feed */
+        .main-feed { position: relative; border: 2px solid var(--neon); background: #000; overflow: hidden; box-shadow: 0 0 20px rgba(0,255,65,0.2); }
+        #local-video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); filter: invert(100%) hue-rotate(180deg) brightness(1.2) contrast(1.8) saturate(2.5); }
+        
+        /* Telemetry Overlays */
+        .ar-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; }
+        .detection-countdown { position: absolute; top: 10%; right: 5%; color: var(--alert); font-size: 1.5rem; border: 2px solid var(--alert); padding: 10px; background: rgba(255,0,0,0.1); font-weight: bold; }
+        .telemetry-overlay { position: absolute; bottom: 5%; left: 5%; font-size: 0.8rem; line-height: 1.5; background: rgba(0,0,0,0.7); padding: 10px; border: 1px solid var(--neon); color: var(--neon); }
+        
+        .scan-bar { width: 100%; height: 4px; background: var(--neon); position: absolute; top: 0; left: 0; z-index: 15; opacity: 0.4; animation: scanMove 4s linear infinite; box-shadow: 0 0 15px var(--neon); }
+        @keyframes scanMove { from { top: 0; } to { top: 100%; } }
+        
+        .side-panel { display: flex; flex-direction: column; gap: 15px; }
+        .sub-feed { height: 140px; border: 1px solid var(--neon); background: #111; position: relative; overflow: hidden; }
+        #secondary-video { width: 100%; height: 100%; object-fit: cover; filter: brightness(0.8) contrast(1.2) sepia(100%) hue-rotate(90deg) saturate(2); opacity: 0.8; }
+        .sub-feed span { position: absolute; bottom: 0; left: 0; width: 100%; font-size: 0.6rem; background: var(--neon); color: #000; padding: 2px 5px; font-weight: bold; z-index: 20; }
+        
+        .ai-status-box { flex-grow: 1; border: 1px solid var(--neon); padding: 20px; background: rgba(0,255,65,0.05); overflow-y: auto; }
+        #ai-text { font-size: 1.1rem; color: #fff; line-height: 1.6; }
+    </style>
+</head>
+<body onclick="enableVoice()">
+
+    <div class="smelter-dashboard">
+        <div class="header">
+            <h1>CIVILIAN CLOAK // SMELTER PROCESSOR</h1>
+            <div id="status">[ SYSTEM STANDBY // CLICK TO UPLINK ]</div>
+        </div>
+
+        <div class="main-feed">
+            <div class="scan-bar"></div>
+            <div class="ar-overlay">
+                <div class="detection-countdown">LOOS: <span id="timer">00:45</span></div>
+                <div class="telemetry-overlay">
+                    VOLTAGE: 3.8V [LOW]<br>
+                    DRONE_DIST: <span id="dist">--</span>m<br>
+                    TEMP: 22.4°C<br>
+                    SIGNAL: STABLE
+                </div>
+            </div>
+            <video id="local-video" autoplay muted playsinline></video>
+        </div>
+
+        <div class="side-panel">
+            <div class="sub-feed">
+                <video id="secondary-video" muted loop playsinline>
+                    <source src="IMG_9613.mp4" type="video/mp4">
+                </video>
+                <span>EXTERIOR_BASEMENT_FEED</span>
+            </div>
+            <div class="sub-feed">
+                <div style="background: #000; height:100%; display: flex; align-items: center; justify-content: center; color: var(--alert); font-size: 0.7rem; text-align: center;">SIGNAL_INTERCEPTED<br>Drone GPS: 40.7128° N</div>
+                <span>SIGNAL_RECON</span>
+            </div>
+            <div class="ai-status-box">
+                <div style="font-size: 0.7rem; color: var(--neon); margin-bottom: 10px;">[ STEALTH & ENERGY ADVISOR ]</div>
+                <div id="ai-text">TAP SCREEN TO INITIALIZE UPLINK...</div>
+            </div>
+        </div>
+    </div>
+
+    <canvas id="capture-canvas" style="display: none;"></canvas>
+
+    <script>
+        const GEMINI_API_KEY = "YOUR_API_KEY_HERE"; 
+        const aiEl = document.getElementById('ai-text');
+        const videoEl = document.getElementById('local-video');
+        const secVideo = document.getElementById('secondary-video');
+        const statusEl = document.getElementById('status');
+        const timerEl = document.getElementById('timer');
+        const distEl = document.getElementById('dist');
+        
+        let voiceEnabled = false;
+
+        // SIMULATE TACTICAL TELEMETRY
+        setInterval(() => {
+            if(!voiceEnabled) return;
+            let dist = Math.floor(Math.random() * 50) + 150;
+            distEl.innerText = dist;
+            let sec = Math.floor(Math.random() * 60).toString().padStart(2, '0');
+            timerEl.innerText = `00:${sec}`;
+        }, 3000);
+
+        function enableVoice() {
+            if(voiceEnabled) return;
+            voiceEnabled = true;
+            statusEl.innerText = "[ SMELTER PROCESSOR: ONLINE ]";
+            
+            videoEl.play();
+            if(secVideo) secVideo.play();
+
+            speak("Smelter engaged. Compositing thermal data with power preservation metrics. Stay low.");
+            analyzeFrame();
+        }
+
+        function speak(text) {
+            if (!voiceEnabled) return;
+            window.speechSynthesis.cancel();
+            const msg = new SpeechSynthesisUtterance(text);
+            const voices = window.speechSynthesis.getVoices();
+            msg.voice = voices.find(v => v.name.includes('Female') || v.name.includes('Samantha') || v.name.includes('Google US English')) || voices[0];
+            msg.rate = 0.9;
+            window.speechSynthesis.speak(msg);
+        }
+
+        async function analyzeFrame() {
+            if (!videoEl.videoWidth || !voiceEnabled) return;
+            aiEl.innerText = "CALCULATING THERMAL LEAK PATHS...";
+            
+            const canvas = document.getElementById('capture-canvas');
+            canvas.width = videoEl.videoWidth;
+            canvas.height = videoEl.videoHeight;
+            canvas.getContext('2d').drawImage(videoEl, 0, 0);
+            const base64Image = canvas.toDataURL('image/jpeg', 0.5).split(',')[1];
+
+            try {
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [
+                            { text: `Analyze this thermal feed. Identify if sources are human or non-threat objects. 
+                            1. Give one instant energy-saving tip to preserve power.
+                            2. Give one stealth advice to reduce exposure. 
+                            3. Format as: DETECTION: [Source] | ENERGY: [Tip] | STEALTH: [Advice]. 
+                            Be concise and robotic.` },
+                            { inline_data: { mime_type: "image/jpeg", "data": base64Image } }
+                        ]}]
+                    })
+                });
+                const data = await response.json();
+                
+                if (data.candidates && data.candidates[0].content) {
+                    const aiResponse = data.candidates[0].content.parts[0].text;
+                    aiEl.innerText = aiResponse;
+                    speak(aiResponse);
+                }
+            } catch (err) { 
+                aiEl.innerText = "SMELTER UPLINK BUSY... RECALCULATING DATA."; 
+            }
+        }
+
+        async function init() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                videoEl.srcObject = stream;
+                setInterval(() => { if(voiceEnabled) analyzeFrame(); }, 15000);
+            } catch (err) {
+                aiEl.innerText = "SENSOR ERROR: PLEASE ALLOW CAMERA ACCESS.";
+            }
+        }
+        window.onload = init;
+    </script>
+</body>
+</html>
