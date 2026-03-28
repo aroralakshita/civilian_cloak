@@ -1,0 +1,20 @@
+{
+  "dependencies": {
+    "@fishjam-cloud/js-server-sdk": "^0.25.5",
+    "@fishjam-cloud/react-client": "^0.25.3",
+    "@google/genai": "^1.46.0",
+    "@google/generative-ai": "^0.24.1",
+    "dotenv": "^17.3.1"
+  },
+  "name": "swm",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module"
+}
